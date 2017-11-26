@@ -1,16 +1,22 @@
-import os, nodesConfig, requests, json
+import os, requests, json, sys, pathlib, nodesConfig
 from flask import Flask, render_template, jsonify, url_for, request, session, flash, redirect, send_from_directory
 from flask.ext.pymongo import PyMongo
 from werkzeug.utils import secure_filename
 
+#Node ID is passed in as the first argument, set node ID to 1 if no node specified
+def getNodeID():
+    if(len(sys.argv) > 0):
+        return int(sys.argv[1])
+    return 1
+
+nodeID = getNodeID()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'thisShouldBeSecret'
-app.config['UPLOAD_FOLDER'] = '/home/donal-tuohy/Documents/SS_year/DFS/NODE_A'
-#app.config['SERVER_NAME'] = '5001'
+app.config['UPLOAD_FOLDER'] = '/home/donal-tuohy/Documents/SS_year/DFS/NODE_' + str(nodeID) 
 
 #Returns boolean of whether the file is there or not
 def checkForFile(filename):
-    return os.path.isfile("./NODE_A/" + filename) 
+    return os.path.isfile("./NODE_" + str(nodeID) +"/" + filename) 
 
 #Server checks if the file exists
 @app.route('/servercheck/<filename>', methods=['GET'])
@@ -44,13 +50,26 @@ def upload_file():
         if file:
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            return "file uploaded"
+            return filename + " uploaded to node " + str(getNodeID())
     
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
-    print(app.config['SERVER_NAME'])
+
+    from flask import jsonify
+
+    ##First node will run on port 5001 and increment with each node
+    nodeID = getNodeID()
+    portNum = 5000 + nodeID
+    address = ("http://127.0.0.1:" + str(portNum) + "/")
+
+    pathlib.Path('./NODE_' + str(nodeID)).mkdir(parents=True, exist_ok=True)
+
+    mainServerUrl = "http://127.0.0.1:5000/"
+    joinJSON = {'message': 'I am a new node.', 'nodeID': nodeID, 'address': address }
+    sendFlag = requests.post(mainServerUrl + "newnode", json=joinJSON) 
+
+    app.run(debug=True, port=portNum)
 
 
 
