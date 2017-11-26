@@ -16,6 +16,11 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def find(name, path):
+    for root, dirs, files in os.walk(path):
+        if name in files:
+            return os.path.join(root, name)
+        return False
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
@@ -36,9 +41,14 @@ def upload_file():
             return redirect(url_for('uploaded_file', filename=filename))
 
 
+@app.route('/')
+
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
+
 
 mongo = PyMongo(app)
 
