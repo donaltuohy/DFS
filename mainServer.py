@@ -1,7 +1,8 @@
-import os
-from flask import Flask, render_template, url_for, request, session, flash, redirect, send_from_directory
+import os, nodesConfig, requests
+from flask import Flask, render_template, url_for, request, session, flash, redirect, send_from_directory, jsonify
 from flask.ext.pymongo import PyMongo
 from werkzeug.utils import secure_filename
+
 
 UPLOAD_FOLDER ='/home/donal-tuohy/Documents/SS_year/DFS/uploads'
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
@@ -24,6 +25,7 @@ def find(name, path):
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
+    print("In post request part")
     if request.method == 'POST':
         print("In post request part")
         #Check if the post request has the file part
@@ -41,7 +43,26 @@ def upload_file():
             return redirect(url_for('uploaded_file', filename=filename))
 
 
-@app.route('/')
+
+
+@app.route('/download/<filename>')
+def download_file(filename):
+    response = requests.get("http://127.0.0.1:5001/servercheck/" + filename)
+    if response.ok:
+        responseJson = response.json()
+        message = responseJson['message']
+        if message == "File on node.":
+            return jsonify({'message': 'File exists.', 'address': ("http://127.0.0.1:5001/" + filename)})
+        elif message == "File does not exist.":
+            return jsonify({'message': message })
+        else:
+            return "ERROR MATE"
+    return "RESPONSE NOT OKAY"
+
+    #TOO COMPLICATED TOO SOON, DO TIS AFTER ONE NODE WORKS
+    #for node in CURRENT_NODES:
+    #    fileCheck = requests.get("http://" + node[ADDRESS] + ":" + str(port) + "/" + filename)
+
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
