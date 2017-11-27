@@ -3,6 +3,8 @@ from flask import Flask, render_template, jsonify, url_for, request, session, fl
 from flask.ext.pymongo import PyMongo
 from werkzeug.utils import secure_filename
 
+
+
 #Node ID is passed in as the first argument, set node ID to 1 if no node specified
 def getNodeID():
     if(len(sys.argv) > 0):
@@ -12,7 +14,14 @@ def getNodeID():
 nodeID = getNodeID()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'thisShouldBeSecret'
-app.config['UPLOAD_FOLDER'] = '/home/donal-tuohy/Documents/SS_year/DFS/NODE_' + str(nodeID) 
+app.config['UPLOAD_FOLDER'] = '/home/donal-tuohy/Documents/SS_year/DFS/NODE_' + str(nodeID)
+
+def getDictOfFiles(nodeAddress):
+    filesOnNode = {}
+    fileList = os.listdir(app.config['UPLOAD_FOLDER'])
+    for fileName in fileList:
+         filesOnNode[fileName] = nodeAddress
+    return filesOnNode
 
 #Returns boolean of whether the file is there or not
 def checkForFile(filename):
@@ -64,9 +73,10 @@ if __name__ == "__main__":
     address = ("http://127.0.0.1:" + str(portNum) + "/")
 
     pathlib.Path('./NODE_' + str(nodeID)).mkdir(parents=True, exist_ok=True)
-
+    currentFiles = getDictOfFiles(address)
     mainServerUrl = "http://127.0.0.1:5000/"
-    joinJSON = {'message': 'I am a new node.', 'nodeID': nodeID, 'address': address }
+    joinJSON = {'message': 'I am a new node.', 'nodeID': nodeID, 'address': address, 'currentFiles': currentFiles}
+    print(joinJSON)
     sendFlag = requests.post(mainServerUrl + "newnode", json=joinJSON) 
 
     app.run(debug=True, port=portNum)
