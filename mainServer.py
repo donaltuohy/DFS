@@ -43,7 +43,7 @@ def roundRobin(filename):
     return indexOfNodeToUse 
     
 #If client wants to get a file, it sends a get request to this URL
-#This server checks if it is stored in the node and if so, returns the address of the node to the client
+#This server checks it's list of files and returns the address of the node which should be accessed next
 @app.route('/download/<filename>')
 def download_file(filename):
 
@@ -52,32 +52,6 @@ def download_file(filename):
         return jsonify({'message': 'File exists.', 'address': ( nodeAddress + filename), 'nodeID': parseNodeID(nodeAddress)})
     else:
         return jsonify({'message': 'File does not exist.'})
-    
-    # #Step through each active node
-    # for node in connectedNodes:
-        
-    #     #Send get request to current node to check if it has the file
-    #     response = requests.get(connectedNodes[node] + "servercheck/" + filename)
-    #     #Make sure response was okay
-    #     if response.ok:
-    #         #Take the json part out of the response
-    #         response2 = response.json()
-    #         message = response2['message']
-
-    #         #Parse message and if file is found, return address of node the file is stored on. Function will also stop searching
-    #         if message == "File on node.":
-    #             print("File found on: ", connectedNodes[node])
-    #             return jsonify({'message': 'File exists.', 'address': (connectedNodes[node] + filename), 'nodeID': node})
-    #         #
-    #         elif message == "File does not exist.":
-    #             print("File not on: ", connectedNodes[node])
-    #             pass
-    #         else:
-    #             return "ERROR MATE"
-    #     del response
-    # return "RESPONSE NOT OKAY"
-
-
 
 @app.route('/newnode', methods=['POST'])
 def newNode():
@@ -89,12 +63,24 @@ def newNode():
     print("Global list of files: ",listOfFiles)
     connectedNodes[newNodeID] = newNodeAddr
 
-    #fileDB  = mongo.db.fileList
-
-    
     print("Node " + str(newNodeID) +" connected on " + newNodeAddr + ".")
     print(connectedNodes)
     return "Hello" #request.get_json()
+
+@app.route('/uploadcheck/<filename>', methods=['GET'])
+def upload_file_check(filename):
+    print("Filename: ", filename)
+    if filename in listOfFiles:
+        return jsonify({'message': 'File already exists.', 'nodeAddresses': listOfFiles[filename]})
+    return jsonify({'message': 'File does not exist.'})
+
+@app.route('/newfile', methods=['POST'])
+def newFile():
+    data = request.get_json()
+    nodeAddress = data['nodeAddress']
+    dictOfFile = data['fileName']
+    addFilesFromNode(dictOfFile,nodeAddress)
+    return "File added to global list"
 
 
 

@@ -11,6 +11,11 @@ def getNodeID():
         return int(sys.argv[1])
     return 1
 
+def getAddress():
+    nodeID = getNodeID()
+    portNum = 5000 + nodeID
+    return ("http://127.0.0.1:" + str(portNum) + "/")
+
 nodeID = getNodeID()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'thisShouldBeSecret'
@@ -42,7 +47,7 @@ def serverCheck(filename):
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
 
     if request.method == 'POST':
@@ -59,6 +64,9 @@ def upload_file():
         if file:
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            currentFiles[filename] = ""
+            dataToNotify = {'nodeAddress': getAddress(), 'fileName': {filename: [getAddress()]} }
+            notifyServer = requests.post("http://127.0.0.1:5000/newfile", json=dataToNotify)
             return filename + " uploaded to node " + str(getNodeID())
     
 
@@ -76,7 +84,6 @@ if __name__ == "__main__":
     currentFiles = getDictOfFiles(address)
     mainServerUrl = "http://127.0.0.1:5000/"
     joinJSON = {'message': 'I am a new node.', 'nodeID': nodeID, 'address': address, 'currentFiles': currentFiles}
-    print(joinJSON)
     sendFlag = requests.post(mainServerUrl + "newnode", json=joinJSON) 
 
     app.run(debug=True, port=portNum)
