@@ -3,10 +3,21 @@ from flask import Flask, render_template, url_for, request, session, flash, redi
 from flask.ext.pymongo import PyMongo
 from werkzeug.utils import secure_filename
 
+### Server local database = dictionary with 3 nested dictionaries:
+
 #dict - key = filename, contains list of all node addresses that have the file
 #listOffiles['index.jpeg'] = ["http://127.0.0.1:5002/", "http://127.0.0.1:5002/"]
-listOfFiles = {}
-fileAccessCount = {}
+
+#dict - key = filename, contains list of all files and their current version
+#fileVersion['index.jpeg'] = 1
+
+#dict - key = filename, used to divide work between nodes
+#fileAccessCount['index.jpeg'] = [10(Number of downloads), 3(Number of nodes the file is on)] #First index is amount of times it has been accessed, second is number of nodes that have it
+
+listOfFiles = {'nodeAddresses': {},
+                'fileAccessCount' : {},
+                'fileVersion': {}
+                }
 
 #dict - key = nodeID, contains list of all node addresses
 #connectedNodes[1] = ["http://127.0.0.1:5001/", 2(This is thenumberOfFiles)]
@@ -33,23 +44,26 @@ def addFilesFromNode(dictOfFiles, nodeAddress):
     #for each file in the passed in dictionary
     for fileName in dictOfFiles:
         #Check if there is a file with this name already on the server
-        if fileName in listOfFiles.keys():
+        if fileName in (listOfFiles['nodeAddresses']).keys():
+            ((listOfFiles['fileVersion'])[fileName]) += 1
             #If the address of the current node isn't already stored, add it to the list of addresses associated with this file
-            if nodeAddress not in listOfFiles[fileName]:
-                (listOfFiles[fileName]).append(nodeAddress)
-                (fileAccessCount[fileName])[1] += 1     #Add to the total number of nodes that have the file 
+            if nodeAddress not in ((listOfFiles['nodeAddresses'])[fileName]):
+                ((listOfFiles['nodeAddresses'])[fileName]).append(nodeAddress)
+                ((listOfFiles['fileAccessCount'])[fileName])[1] += 1     #Add to the total number of nodes that have the file 
         #If the file does not exist on the global list of files, create a new key with the filename        
         else:
-            listOfFiles[fileName] = [nodeAddress]
-            fileAccessCount[fileName] = [0,1]       #First index is amount of times it has been accessed, second is number of nodes that have it
+            ((listOfFiles['nodeAddresses'])[fileName]) = [nodeAddress]
+            ((listOfFiles['fileAccessCount'])[fileName]) = [0,1]     
+            ((listOfFiles['fileVersion'])[fileName]) = 1  
 
 
 #This works out where the file was downloaded most recently and preforms round robin to make sure the file is downloaded fairly from nodes
 def roundRobin(filename):
-    myList = fileAccessCount[filename]
+    myList = ((listOfFiles['fileAccessCount'])[filename])
     indexOfNodeToUse = (myList[0])%(myList[1])
-    (fileAccessCount[filename])[0] += 1
+    ((listOfFiles['fileAccessCount'])[filename])[0] += 1
     return indexOfNodeToUse 
+
 
 def nodeToUploadTo():
     minIndex = 1
@@ -72,11 +86,12 @@ def newNode():
         newNodeAddr = response['address']
         dictOfFiles = response['currentFiles']
         addFilesFromNode(dictOfFiles, newNodeAddr)
-        print("Global list of files: ",listOfFiles)
+        print("File Versions: ",listOfFiles['fileVersion'])
         connectedNodes[newNodeID] = [newNodeAddr, len(dictOfFiles)]
         return jsonify({'message': 'Node successfuly set up.'})
     else:
         return jsonify({'message': 'Node could not be set up.'})
+
 
 #This endpoint is accessed by a node when it gets a new file. It updates the list of files
 @app.route('/newfile', methods=['POST'])
@@ -86,38 +101,35 @@ def newFile():
     dictOfFile = data['fileName']
     addFilesFromNode(dictOfFile,nodeAddress)
     (connectedNodes[parseNodeID(nodeAddress)])[1] += 1
-    print(connectedNodes)
+    print("File Versions: ",listOfFiles['fileVersion'])
     return "File added to global list"
+
 
 #This endpoint returns a dict of all the files stored on the server
 @app.route('/returnlist', methods=['GET'])
 def returnFiles():
-    return jsonify(listOfFiles)
+    return jsonify(listOfFiles['nodeAddresses'])
 
 
 #This endpoint is used to check if a file exists on the server.
 @app.route('/uploadcheck/<filename>', methods=['GET'])
 def upload_file_check(filename):
     print("Filename: ", filename)
-    if filename in listOfFiles:
-        return jsonify({'message': 'File already exists.', 'nodeAddresses': listOfFiles[filename]})
+    if filename in (listOfFiles['nodeAddresses']):
+        return jsonify({'message': 'File already exists.', 'nodeAddresses': ((listOfFiles['nodeAddresses'])[filename]), "addressToUploadTo": nodeToUploadTo()  })
     
     return jsonify({'message': 'File does not exist.', "addressToUploadTo": nodeToUploadTo() })
 
-
-
-
-
-#@app.route('/uploads/<filename>')
-#def uploaded_file(filename):
-#    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+@app.route('/version/<filename>', methods=['GET'])
+def getVersion(filename):
+    return jsonify({'fileVersion': ((listOfFiles['fileVersion'])[filename]) })
 
 #If client wants to get a file, it sends a get request to this URL
 #This server checks it's list of files and returns the address of the node which should be accessed next
 @app.route('/download/<filename>')
 def download_file(filename):
-    if filename in listOfFiles.keys():
-        nodeAddress = ((listOfFiles[filename])[roundRobin(filename)])
+    if filename in (listOfFiles['nodeAddresses']).keys():
+        nodeAddress = (((listOfFiles['nodeAddresses'])[filename])[roundRobin(filename)])
         return jsonify({'message': 'File exists.', 'address': ( nodeAddress + filename), 'nodeID': parseNodeID(nodeAddress)})
     else:
         return jsonify({'message': 'File does not exist.'})

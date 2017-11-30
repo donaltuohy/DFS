@@ -72,7 +72,7 @@ def upload_file():
             print('No selected file')
             return "NO selected file" #redirect(request.url)""
         if file:
-            filename = secure_filename(file.filename)
+            filename = file.filename
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             currentFiles[filename] = ""
             dataToNotify = {'nodeAddress': getAddress(), 'fileName': {filename: [getAddress()]} }
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     joinJSON = {'message': 'I am a new node.', 'nodeID': nodeID, 'address': address, 'currentFiles': currentFiles}
     sendFlag = requests.post(mainServerUrl + "newnode", json=joinJSON) 
 
-    app.run(debug=True, port=portNum)
+    app.run(port=portNum)
 
 
 
