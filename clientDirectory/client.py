@@ -18,6 +18,7 @@ def printListOfFiles(clientId):
 def updateCacheList(clientID, cachedFilesList):
     fileList = os.listdir(CLIENT_FOLDER + str(clientID))
     for fileName in fileList:
+        if fileName not in cachedFilesList.keys():
          cachedFilesList[fileName] = ["0", "0", "0", 0]
 
 #Returns the dict of server files
@@ -200,9 +201,12 @@ def uploadFile(filename, clientID, fileVersion, cachedFilesList):
                 return 1
             del upload
 
-## do this 
-##
-##def removeFile(filename):
+def removeFile(filename):
+    response = requests.post("http://127.0.0.1:5000/remove/" + filename)
+    if response.ok:
+        print("<" + filename + "> has been deleted form the server")
+    else:
+        print("<" + filename + "> could not be deleted.")
 
 
 

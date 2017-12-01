@@ -1,7 +1,8 @@
-import os, requests, json, sys, pathlib, nodesConfig
+import os, requests, json, sys, pathlib, serverConfig
 from flask import Flask, render_template, jsonify, url_for, request, session, flash, redirect, send_from_directory
 from flask.ext.pymongo import PyMongo
 from werkzeug.utils import secure_filename
+from serverConfig import *
 
 #returns the Id of this current node
 def getNodeID():
@@ -10,6 +11,7 @@ def getNodeID():
     return 1
 
 ##CONFIGURATIONS##
+
 nodeID = getNodeID()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'thisShouldBeSecret'
@@ -52,6 +54,14 @@ def serverCheck(filename):
     if fileExists:
         return jsonify({'message': 'File on node.'}) 
     return jsonify({'message': 'File does not exist.'})
+
+@app.route('/removefile', methods=['POST'])
+def removeFile():
+    message = request.get_json()
+    filename = message['fileToDelete']
+    os.remove(app.config['UPLOAD_FOLDER'] + '/' + filename)
+    print("<" + filename + "> has been deleted from this node.")
+    return jsonify({'message' : 'File deleted.'})
 
 
 @app.route('/<filename>')

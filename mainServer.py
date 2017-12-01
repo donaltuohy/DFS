@@ -1,8 +1,7 @@
-import os, requests, nodesConfig
+import os, requests, serverConfig
 from flask import Flask, render_template, url_for, request, session, flash, redirect, send_from_directory, jsonify
 from flask.ext.pymongo import PyMongo
 from werkzeug.utils import secure_filename
-
 ### Server local database = dictionary with 3 nested dictionaries:
 
 #dict - key = filename, contains list of all node addresses that have the file
@@ -109,6 +108,21 @@ def newFile():
 @app.route('/returnlist', methods=['GET'])
 def returnFiles():
     return jsonify(listOfFiles['nodeAddresses'])
+
+
+
+@app.route('/remove/<filename>', methods=['POST'])
+def removeFile(filename):
+    if filename in listOfFiles['nodeAddresses']:
+        for node in (listOfFiles['nodeAddresses'])[filename]:
+            response = requests.post(node + "removefile", json={'fileToDelete': filename} )
+            if response.ok:
+                if (response.json())['message'] == 'File deleted.':
+                    del ((listOfFiles['nodeAddresses'])[filename])
+                    del ((listOfFiles['fileVersion'])[filename])
+                    del ((listOfFiles['fileAccessCount'])[filename])
+                    print(filename + " deleted from server")
+                    return "File deleted"
 
 
 #This endpoint is used to check if a file exists on the server.
