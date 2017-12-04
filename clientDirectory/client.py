@@ -164,7 +164,7 @@ def uploadFile(filename, clientID, fileVersion, cachedFilesList):
                         else:
                             print("Could not upload to " + nodeAddress)
                         del upload
-                        return fileVersion
+                    return fileVersion
                     overwriteFlag = True
 
                 elif choice == 'n':
