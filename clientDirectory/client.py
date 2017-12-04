@@ -109,9 +109,12 @@ def downloadFile(filename, clientID, cachedFilesList):
         return
     filecheck = requests.get("http://127.0.0.1:5000/download/" + filename)
     if (filecheck.ok):
+        print("filecheck is okay")
         serverJsonResponse = filecheck.json()
         if (serverJsonResponse['message'] == "File exists."):
+            print("About to send get request")
             fileRequest = requests.get(serverJsonResponse['address'])
+            print("Get request sent")
             with open(CLIENT_FOLDER + str(clientID) + "/" + filename, 'wb') as handler:
                 handler.write(fileRequest.content)
             with open(CACHE_FOLDER + str(clientID) + "/" + filename, 'wb') as handler:
@@ -151,7 +154,9 @@ def uploadFile(filename, clientID, fileVersion, cachedFilesList):
                 if choice == 'y':
                     files = getFile(filename,clientID)
                     fileVersionDict = {'fileVersion' : fileVersion}
-                    for nodeAddress in serverJsonResponse['nodeAddresses']:
+                    print("Uploading to: " ,serverJsonResponse['nodeAddresses'])
+                    listOfNodes = serverJsonResponse['nodeAddresses']
+                    for nodeAddress in listOfNodes:
                         upload = requests.post(nodeAddress + 'upload', files=files, json=fileVersionDict)
                         if upload.ok:
                             print("Uploaded to " + nodeAddress)
@@ -169,6 +174,7 @@ def uploadFile(filename, clientID, fileVersion, cachedFilesList):
                         copyfile((CLIENT_FOLDER + str(clientID) + "/" + filename),(CLIENT_FOLDER + str(clientID) + "/" + newFilename))
                         files = getFile(newFilename, clientID)
                         uploadAddress = serverJsonResponse['addressToUploadTo']
+                        print("Uploading to ", uploadAddress)
                         upload = requests.post(uploadAddress + 'upload', files=files)
                         if upload.ok:
                             print("Uploaded to " + uploadAddress)
@@ -208,9 +214,19 @@ def removeFile(filename):
     else:
         print("<" + filename + "> could not be deleted.")
 
-
+def backupFile(filename):
+    filecheck = requests.get("http://127.0.0.1:5000/backupcheck/" + filename)
+    if filecheck.ok:
+        serverJsonResponse = filecheck.json()
+        if serverJsonResponse['message'] == 'File already exists.':
+            addr = serverJsonResponse['addressToUploadTo']
+            print("Backing up to:", addr)
+            backup = requests.get(addr[0] + "backup/" + filename)
+            if backup.ok:
+                print("File backed up succesfully")
+        else:
+            print("Cannot backup")
 
 def prompt():
     print("Hello. Welcome to Donal's DFS.")
     print("________________________________\n")
-

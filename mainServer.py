@@ -5,7 +5,7 @@ from werkzeug.utils import secure_filename
 ### Server local database = dictionary with 3 nested dictionaries:
 
 #dict - key = filename, contains list of all node addresses that have the file
-#listOffiles['index.jpeg'] = ["http://127.0.0.1:5002/", "http://127.0.0.1:5002/"]
+#nodeAddresses['index.jpeg'] = ["http://127.0.0.1:5002/", "http://127.0.0.1:5002/"]
 
 #dict - key = filename, contains list of all files and their current version
 #fileVersion['index.jpeg'] = 1
@@ -38,13 +38,14 @@ def parseNodeID(address):
     return port - 5000
 
 #Pass in a dict of files {"index.jpeg": [address1, address2]}
-def addFilesFromNode(dictOfFiles, nodeAddress):
+def addFilesFromNode(dictOfFiles, nodeAddress, uploadType):
 
     #for each file in the passed in dictionary
     for fileName in dictOfFiles:
         #Check if there is a file with this name already on the server
         if fileName in (listOfFiles['nodeAddresses']).keys():
-            ((listOfFiles['fileVersion'])[fileName]) += 1
+            if uploadType == "upload":
+                ((listOfFiles['fileVersion'])[fileName]) += 1
             #If the address of the current node isn't already stored, add it to the list of addresses associated with this file
             if nodeAddress not in ((listOfFiles['nodeAddresses'])[fileName]):
                 ((listOfFiles['nodeAddresses'])[fileName]).append(nodeAddress)
@@ -84,7 +85,7 @@ def newNode():
         newNodeID = response['nodeID']
         newNodeAddr = response['address']
         dictOfFiles = response['currentFiles']
-        addFilesFromNode(dictOfFiles, newNodeAddr)
+        addFilesFromNode(dictOfFiles, newNodeAddr, "upload")
         print("File Versions: ",listOfFiles['fileVersion'])
         connectedNodes[newNodeID] = [newNodeAddr, len(dictOfFiles)]
         return jsonify({'message': 'Node successfuly set up.'})
@@ -98,10 +99,13 @@ def newFile():
     data = request.get_json()
     nodeAddress = data['nodeAddress']
     dictOfFile = data['fileName']
-    addFilesFromNode(dictOfFile,nodeAddress)
+    uploadType = data['fileType']
+    addFilesFromNode(dictOfFile,nodeAddress, uploadType)
     (connectedNodes[parseNodeID(nodeAddress)])[1] += 1
     print("File Versions: ",listOfFiles['fileVersion'])
     return "File added to global list"
+
+
 
 
 #This endpoint returns a dict of all the files stored on the server
@@ -133,6 +137,20 @@ def upload_file_check(filename):
         return jsonify({'message': 'File already exists.', 'nodeAddresses': ((listOfFiles['nodeAddresses'])[filename]), "addressToUploadTo": nodeToUploadTo()  })
     
     return jsonify({'message': 'File does not exist.', "addressToUploadTo": nodeToUploadTo() })
+
+@app.route('/backupcheck/<filename>', methods=['GET'])
+def backupFileCheck(filename):
+    print("\n\n",  listOfFiles['nodeAddresses'], "\n\n")
+    if filename in (listOfFiles['nodeAddresses'].keys()):
+        for address in connectedNodes.values():
+            listOfAddresses = ((listOfFiles['nodeAddresses'])[filename])
+            print("Current Address: ", address)
+            if address[0] in listOfAddresses:
+                print("File stored on:", address[0])
+            else:
+                print("File not stored on", address)
+                return jsonify({'message': 'File already exists.', "addressToUploadTo": address})
+    return jsonify({'message': 'File does not exist.'})
 
 @app.route('/version/<filename>', methods=['GET'])
 def getVersion(filename):

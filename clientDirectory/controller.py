@@ -22,7 +22,7 @@ while True:
 
     
 
-    choice = input("\nTo upload a file, press 1.\nTo download a file press 2.\nTo remove a file from the server press 3\nTo show all files on the server press 4.\nTo show all local files press 5.\nYour choice: ")
+    choice = input("\nTo upload a file, press 1.\nTo download a file press 2.\nTo backup a file stored on the server, press 3\nTo remove a file from the server press 4\nTo show all files on the server press 5.\nTo show all local files press 6.\nYour choice: ")
     
 
     ### USING UPLOAD FUNCTION   ### 
@@ -52,6 +52,19 @@ while True:
     elif (choice == '3'):
         print(chr(27) + "[2J")
         printServerFiles()
+        
+        filename = input("Enter file name to backup:")
+        print(chr(27) + "[2J")
+
+        listOfFiles = getServerDict()
+        if filename in listOfFiles.keys():
+            backupFile(filename)
+        else:
+            print("File doesn't exsist on server.")
+
+    elif (choice == '4'):
+        print(chr(27) + "[2J")
+        printServerFiles()
         filename = input("Enter file name to delete:")
         print(chr(27) + "[2J")
 
@@ -63,12 +76,12 @@ while True:
 
 
     ### PRINT FILES ON SERVER   ###
-    elif (choice == '4'):
+    elif (choice == '5'):
         print(chr(27) + "[2J")
         printServerFiles()
 
     ### PRINT LOCAL FILES
-    elif (choice == '5'):
+    elif (choice == '6'):
         print(chr(27) + "[2J")
         printListOfFiles(clientID)
 
@@ -76,5 +89,3 @@ while True:
 
     else:
         print("Invalid value entered.")
-
-
