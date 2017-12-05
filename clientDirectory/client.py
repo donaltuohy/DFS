@@ -143,10 +143,6 @@ def uploadFile(filename, clientID, fileVersion, cachedFilesList):
         if serverJsonResponse['message'] == 'File already exists.':
             serverVersion = getFileVersion(filename)
         
-            if(serverVersion > fileVersion):
-                print("This file is outdated. Please download the new version from the server.\nServer version: " + str(serverVersion) + "\nYour version: " + str(fileVersion))
-                return fileVersion
-        
             while not overwriteFlag:
                 print("File with that name already exists on server.")
                 choice = input("Would you like to overwrite it? (y/n):")
@@ -154,6 +150,9 @@ def uploadFile(filename, clientID, fileVersion, cachedFilesList):
                 if choice == 'y':
                     files = getFile(filename,clientID)
                     fileVersionDict = {'fileVersion' : fileVersion}
+                    if(serverVersion > fileVersion):
+                        print("This file is outdated. Please download the new version from the server.\nServer version: " + str(serverVersion) + "\nYour version: " + str(fileVersion))
+                        return fileVersion
                     print("Uploading to: " ,serverJsonResponse['nodeAddresses'])
                     listOfNodes = serverJsonResponse['nodeAddresses']
                     for nodeAddress in listOfNodes:
