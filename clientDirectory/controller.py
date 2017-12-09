@@ -34,7 +34,7 @@ while True:
         printListOfFiles(clientID)
         
         filename = input("Enter file name to upload:")
-        print(chr(27) + "[2J")
+        ##print(chr(27) + "[2J")
         if filename in cachedFiles.keys():
             (cachedFiles[filename])[3] = uploadFile(filename, clientID, (cachedFiles[filename])[3], cachedFiles )
         else:

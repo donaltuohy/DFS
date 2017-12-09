@@ -96,7 +96,8 @@ def upload_file():
     
 @app.route('/backup/<filename>', methods=['GET','POST'])
 def backup(filename):
-    filecheck = requests.get("http://127.0.0.1:5000/download/" + filename)
+    clientId = {'clientID' : -9999}
+    filecheck = requests.get("http://127.0.0.1:5000/download/" + filename, json = clientId)
     if (filecheck.ok):
         serverJsonResponse = filecheck.json()
         print(serverJsonResponse)

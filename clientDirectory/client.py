@@ -107,14 +107,24 @@ def downloadFile(filename, clientID, cachedFilesList):
         prompt()
         print("Cached file downloaded from: Date:" + (cachedFilesList[filename])[0] + " Time: " + (cachedFilesList[filename])[1] + ":" +(cachedFilesList[filename])[2]  )
         return
-    filecheck = requests.get("http://127.0.0.1:5000/download/" + filename)
+    clientDict = {'clientID' : clientID}
+    filecheck = requests.get("http://127.0.0.1:5000/download/" + filename, json=clientDict)
     if (filecheck.ok):
-        print("filecheck is okay")
         serverJsonResponse = filecheck.json()
+        if serverJsonResponse['message'] == "File locked.":
+            if serverJsonResponse['lockedBy'] == clientID:
+                print("You have locked this file.") 
+                choice = input("Would you like to download the server version anyway? (y/n)")
+                if choice == 'y':
+                    serverJsonResponse['message'] = "File exists."
+                elif choice == 'n':
+                    print("Cancelling download.")
+                    return
+            else:
+                print(filename, " is locked by client ", serverJsonResponse['lockedBy'], ".")
+                return
         if (serverJsonResponse['message'] == "File exists."):
-            print("About to send get request")
             fileRequest = requests.get(serverJsonResponse['address'])
-            print("Get request sent")
             with open(CLIENT_FOLDER + str(clientID) + "/" + filename, 'wb') as handler:
                 handler.write(fileRequest.content)
             with open(CACHE_FOLDER + str(clientID) + "/" + filename, 'wb') as handler:
@@ -140,6 +150,13 @@ def uploadFile(filename, clientID, fileVersion, cachedFilesList):
     filecheck = requests.get("http://127.0.0.1:5000/uploadcheck/" + filename)
     if filecheck.ok:
         serverJsonResponse = filecheck.json()
+        if serverJsonResponse['message'] == 'File locked':
+            print("File is locked")
+            if serverJsonResponse['lockedBy'] == clientID:
+                serverJsonResponse['message'] = 'File already exists.'
+            else:
+                print("This file is locked by client", serverJsonResponse['lockedBy'])
+                return fileVersion
         if serverJsonResponse['message'] == 'File already exists.':
             serverVersion = getFileVersion(filename)
         
@@ -163,6 +180,9 @@ def uploadFile(filename, clientID, fileVersion, cachedFilesList):
                         else:
                             print("Could not upload to " + nodeAddress)
                         del upload
+                    lockRemove = requests.get("http://127.0.0.1:5000/removelock/" + filename)
+                    if lockRemove.ok:
+                        print("Lock Removed.")
                     return fileVersion
                     overwriteFlag = True
 
@@ -178,6 +198,9 @@ def uploadFile(filename, clientID, fileVersion, cachedFilesList):
                         if upload.ok:
                             print("Uploaded to " + uploadAddress)
                             downloadFile(newFilename,clientID,cachedFilesList)
+                            lockRemove = requests.get("http://127.0.0.1:5000/removelock/" + filename)
+                            if lockRemove.ok:
+                                print("Lock Removed.")
                             return 1
                         else:
                             print("Could not upload to server")

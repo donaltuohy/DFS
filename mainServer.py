@@ -15,7 +15,8 @@ from werkzeug.utils import secure_filename
 
 listOfFiles = {'nodeAddresses': {},
                 'fileAccessCount' : {},
-                'fileVersion': {}
+                'fileVersion': {},
+                'lockedFiles' : {}
                 }
 
 #dict - key = nodeID, contains list of all node addresses
@@ -36,6 +37,9 @@ def parseNodeID(address):
     split = address.split(':')
     port = int((split[2])[:4])
     return port - 5000
+
+def deleteFromDict(filename, dictToDeleteFrom):
+    del dictToDeleteFrom[filename]
 
 #Pass in a dict of files {"index.jpeg": [address1, address2]}
 def addFilesFromNode(dictOfFiles, nodeAddress, uploadType):
@@ -132,11 +136,20 @@ def removeFile(filename):
 #This endpoint is used to check if a file exists on the server.
 @app.route('/uploadcheck/<filename>', methods=['GET'])
 def upload_file_check(filename):
-    print("Filename: ", filename)
+    print(listOfFiles['lockedFiles'])
     if filename in (listOfFiles['nodeAddresses']):
-        return jsonify({'message': 'File already exists.', 'nodeAddresses': ((listOfFiles['nodeAddresses'])[filename]), "addressToUploadTo": nodeToUploadTo()  })
-    
+        if filename not in (listOfFiles['lockedFiles']):
+            return jsonify({'message': 'File already exists.', 'nodeAddresses': ((listOfFiles['nodeAddresses'])[filename]), "addressToUploadTo": nodeToUploadTo()  })
+        else:
+            return jsonify({'message': 'File locked','lockedBy' : ((listOfFiles['lockedFiles'])[filename]) , 'nodeAddresses': ((listOfFiles['nodeAddresses'])[filename]), "addressToUploadTo": nodeToUploadTo()})
     return jsonify({'message': 'File does not exist.', "addressToUploadTo": nodeToUploadTo() })
+
+@app.route("/removelock/<filename>")
+def removeDef(filename):
+    if filename in listOfFiles['lockedFiles']:
+        deleteFromDict(filename,(listOfFiles['lockedFiles']))
+        print("Removed lock on ", filename)
+    return "Hello"
 
 @app.route('/backupcheck/<filename>', methods=['GET'])
 def backupFileCheck(filename):
@@ -156,13 +169,22 @@ def backupFileCheck(filename):
 def getVersion(filename):
     return jsonify({'fileVersion': ((listOfFiles['fileVersion'])[filename]) })
 
+
+
 #If client wants to get a file, it sends a get request to this URL
 #This server checks it's list of files and returns the address of the node which should be accessed next
 @app.route('/download/<filename>')
 def download_file(filename):
+    clientDict = request.get_json()
+    clientID = clientDict['clientID']
     if filename in (listOfFiles['nodeAddresses']).keys():
         nodeAddress = (((listOfFiles['nodeAddresses'])[filename])[roundRobin(filename)])
-        return jsonify({'message': 'File exists.', 'address': ( nodeAddress + filename), 'nodeID': parseNodeID(nodeAddress)})
+        if filename not in (listOfFiles['lockedFiles']).keys():
+            if clientID != -9999:
+                ((listOfFiles['lockedFiles'])[filename]) = clientID
+            return jsonify({'message': 'File exists.', 'address': ( nodeAddress + filename), 'nodeID': parseNodeID(nodeAddress)})
+        else:
+            return jsonify({'message': 'File locked.', 'lockedBy' : ((listOfFiles['lockedFiles'])[filename]), 'address': ( nodeAddress + filename), 'nodeID': parseNodeID(nodeAddress) })
     else:
         return jsonify({'message': 'File does not exist.'})
 
