@@ -1,4 +1,4 @@
-import os, requests, json, sys, pathlib, serverConfig
+ import os, requests, json, sys, pathlib, serverConfig
 from flask import Flask, render_template, jsonify, url_for, request, session, flash, redirect, send_from_directory
 from flask.ext.pymongo import PyMongo
 from werkzeug.utils import secure_filename
