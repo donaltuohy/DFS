@@ -28,7 +28,7 @@ A node has many endpoints but the main two are the upload and download enpoints.
 
 To run this script in terminal, set the path to the file's directory and call:
 
->*python3.6 nodeServer.py nodeID(int)*
+>*python3.6 nodeServer.py node`ID(int)*
 
 ### [client.py](https://github.com/donaltuohy/DFS/blob/master/clientDirectory/client.py)        
 This is the library of functions I have built which allow a client to interact with the distributed file server API. It uses the requests library in python.
@@ -47,6 +47,18 @@ To run this script in terminal, set the path to the file's directory and call:
 >*python3.6 contoller.py clientID(int)*
 
 ## Distributed Transparent File Access
+The first service I imlplemented was distributed transparent file access. I did this by creating the basics of the nodeServer script.
+
+The node has a directory that is associated with it. This directory stores the files that should be accessible by the client.
+
+To upload a file, a client would send a POST request to the *'/upload'* endpoint. This endpoint then checks for an attached file and if it's okay, it adds the file to it's directory. This process can be seen by the red request in figure 2. 
+
+To download a file, a client would send a GET request. The endpoint for this however, would be the file name the client wishes to download (eg. *'/file1.txt'*). The node would then seach for this file in it's directory and if it has it, send it back as a response to the request. This can be seen by the green request in figure 2.
+
+![Transparent File Access Diagram](https://user-images.githubusercontent.com/20796292/33941766-9a5015c6-e00b-11e7-9197-713792f032c0.png)
+*Figure 2: Transparent File Access Diagram* 
+
+
 
 ## Directory Service
 
