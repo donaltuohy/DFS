@@ -5,7 +5,7 @@ Student Name: Donal Tuohy
 Student Number: 14313774
 
 ## Overview
-This reposistory contains the files I have created to implement a Distributed File System. There are several parts to the system which can be seen in figure 1.
+This repository contains the files I have created to implement a Distributed File System. There are several parts to the system which can be seen in figure 1.
 
 ![Distributed File System Diagram](https://user-images.githubusercontent.com/20796292/33880900-05061398-df2b-11e7-845e-a4eafbca43bf.png "Figure 1: Distributed File System Diagram")
 *Figure 1: Distributed File System Diagram* 
