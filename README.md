@@ -1,5 +1,9 @@
 # Distributed file system
 
+Student Name: Donal Tuohy
+
+Student Number: 14313774
+
 ## Overview
 This reposistory contains the files I have created to implement a Distributed File System. There are several parts to the system which can be seen in figure 1.
 
